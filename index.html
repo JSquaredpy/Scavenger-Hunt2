@@ -128,6 +128,52 @@
   }
 </style>
 </head>
+
+<div id="riddleOverlay" style="
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: var(--accent);
+  z-index: 100;
+  font-family: monospace;
+  padding: 20px;
+">
+  <div id="riddleText" style="
+    margin-bottom: 15px;
+    font-size: 1rem;
+    text-align: center;
+    max-width: 90%;
+    width: 100%;
+  "></div>
+  <input id="riddleAnswer" type="text" placeholder="Your answer..." style="
+    padding: 8px 12px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    margin-bottom: 10px;
+    max-width: 90%;
+    width: 100%;
+    box-sizing: border-box;
+  ">
+  <button id="riddleSubmit" style="
+    padding: 8px 16px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    background: var(--accent-2);
+    color: black;
+    cursor: pointer;
+    max-width: 90%;
+    width: 100%;
+    box-sizing: border-box;
+  ">Submit</button>
+</div>
+
+
 <body>
 
 <div id="gameContainer">
@@ -163,16 +209,15 @@ const SPRITES = {
   captainPortrait: 'images/captain-sprite.png',
   npc: 'images/homeless-sprite.png',
   npc2: 'images/terminal.png',
-  npc3: 'images/man-sprite.png' // new NPC sprite
+   npc3: 'images/man-sprite.png',
+
 
 };
 
 const AUDIO = {
   voice: 'audio/voice.mp3',
   bgm: 'audio/bgmusic.mp3',
-  npcVoice: 'audio/npc-voice.mp3',
   npc2Voice: 'audio/npc-voice2.mp3',
-  npc3Voice: 'audio/npc-voice3.mp3'
 };
 
 const canvas = document.getElementById('gameCanvas');
@@ -209,21 +254,20 @@ const npc3 = {
 
 
 const npcScriptText = [
-  { text: "You're probably wondering how I got here. ", duration: 1000 },
-  { text: "They paid me 55 flax to follow you here and make sure you stay on track", duration: 1600 },
- { text: "You need to go to some Massage parlour or some shit like that. ", duration: 1100 },
-  { text: "I only like the ones with happy endings.", duration: 1100 },
-{ text: "...", duration: 500 },
- { text: "By the way you're still a nigg-", duration: 1000 },
- 
+  { text: "Come back have you? ", duration: 1000 },
+  { text: "Haha, they always do.", duration: 1000 },
+  { text: "You didn't give me any flax back on Zygmore...", duration: 1000 },
+  { text: "So I wont make it easy for you.", duration: 1000 },
+ { text: "So, timetraveller, riddle me this...", duration: 1000 },
 ];
 
 const npc2ScriptText = [
-  { text: "<span class='italic'>TERMINAL SAYS<br> Head to LAYANA - Belsize Hill to continue. </span>", duration: 10000 }
+  { text: "<span class='italic'>TERMINAL SAYS<br> Find the place in South London to continue. </span>", duration: 10000 }
 ];
 
 const npc3ScriptText = [
-  { text: "Wagwan piff ting, what's that BBM pin?", duration: 2500 },
+  { text: "Thank you -ah", duration: 1900 },
+  { text: "Hope -ah You enjoy - ah", duration: 1900 },
 ];
 
 const imagesToLoad = [...STAGE_BACKGROUNDS, SPRITES.right, SPRITES.left, SPRITES.captainPortrait, SPRITES.npc, SPRITES.npc2,SPRITES.npc3 ];
@@ -237,6 +281,7 @@ imagesToLoad.forEach(src => {
   img.src = src;
 });
 
+const npcAudioRiddleCorrect = new Audio('audio/npc-voice2.mp3');
 const voiceAudio = new Audio(AUDIO.voice);
 const bgmusic = new Audio(AUDIO.bgm); bgmusic.loop = true; bgmusic.volume = 0.36;
 const npcAudio = new Audio(AUDIO.npcVoice);
@@ -382,11 +427,12 @@ function startNpcDialogue(){
 
   playNpcDialogueSequence();
 }
-function playNpcDialogueSequence() {
+function playNpcDialogueSequence(onComplete) {
   npcDialoguePlaying = true;
   npcDialogueIndex = 0;
   portrait.style.backgroundImage = `url('${SPRITES.npc}')`;
   dialogueBox.classList.add('show');
+
   function nextLine() {
     if (npcDialogueIndex >= npcScriptText.length) {
       setTimeout(() => {
@@ -394,6 +440,7 @@ function playNpcDialogueSequence() {
         portrait.style.backgroundImage = `url('${SPRITES.captainPortrait}')`;
         npcDialoguePlaying = false;
         npc.isTalking = false;
+        if (onComplete) onComplete(); // <-- call callback after last line
       }, 1000);
       return;
     }
@@ -403,8 +450,100 @@ function playNpcDialogueSequence() {
       setTimeout(nextLine, line.duration || 3000);
     });
   }
+
   nextLine();
 }
+
+const npcPostRiddleScriptText = [
+  { text: "Ah, correct! You really know your stuff.", duration: 2000 },
+  { text: "Here's the info you need.", duration: 2000 },
+  { text: "There's rummors going down about some place in South London...", duration: 2000 },
+  { text: "Some shop or the other somewhere in Clapham.", duration: 2000 },
+   { text: "I think they had their first date there or something, can't be too sure.", duration: 2000 },
+   { text: "Now, get out of my face brokie.", duration: 2000 },
+];
+
+let npcPostRiddleIndex = 0;
+let npcPostRiddlePlaying = false;
+
+function playNpcDialogueSequencePostRiddle() {
+  npcPostRiddlePlaying = true;
+  npcPostRiddleIndex = 0;
+  portrait.style.backgroundImage = `url('${SPRITES.npc}')`;
+  dialogueBox.classList.add('show');
+
+  function nextLine() {
+    if (npcPostRiddleIndex >= npcPostRiddleScriptText.length) {
+      setTimeout(() => {
+        dialogueBox.classList.remove('show');
+        portrait.style.backgroundImage = `url('${SPRITES.captainPortrait}')`;
+        npcPostRiddlePlaying = false;
+        npc.isTalking = false;
+      }, 1000);
+      return;
+    }
+    const line = npcPostRiddleScriptText[npcPostRiddleIndex];
+    typeSentence(line.text, () => {
+      npcPostRiddleIndex++;
+      setTimeout(nextLine, line.duration || 3000);
+    });
+  }
+
+  nextLine();
+}
+
+
+const riddleOverlay = document.getElementById('riddleOverlay');
+const riddleText = document.getElementById('riddleText');
+const riddleAnswer = document.getElementById('riddleAnswer');
+const riddleSubmit = document.getElementById('riddleSubmit');
+
+// Define your riddle and correct answer
+const riddle = {
+  question: "I speak without a mouth and hear without ears. I have nobody, but I come alive with wind. What am I?",
+  answer: "echo"
+};
+
+function showRiddle(callback) {
+  dialogueBox.classList.remove('show'); // hide dialogue while riddle is active
+  riddleText.textContent = riddle.question;
+  riddleAnswer.value = '';
+  riddleOverlay.style.display = 'flex';
+  riddleAnswer.focus();
+
+  riddleSubmit.onclick = () => {
+    if(riddleAnswer.value.trim().toLowerCase() === riddle.answer.toLowerCase()) {
+      riddleOverlay.style.display = 'none';
+      callback(); // continue NPC1 dialogue
+    } else {
+      riddleText.textContent = "Wrong! Try again.\n" + riddle.question;
+      riddleAnswer.value = '';
+      riddleAnswer.focus();
+    }
+  };
+}
+
+// Modify startNpcDialogue to show riddle first
+function startNpcDialogue() {
+  npc.isTalking = true;
+  hideInteractButton();
+
+  // Step 1: play initial NPC lines
+  playNpcDialogueSequence(() => {
+    // Step 2: show riddle after initial lines
+    showRiddle(() => {
+      // Step 3: play post-riddle audio and dialogue
+      npcAudioRiddleCorrect.currentTime = 0;
+      npcAudioRiddleCorrect.play();
+
+      setTimeout(() => {
+        playNpcDialogueSequencePostRiddle();
+      }, 500);
+    });
+  });
+}
+
+
 
 // NPC2 dialogue sequence
 let npc2DialogueIndex = 0, npc2DialoguePlaying = false;
@@ -502,11 +641,11 @@ window.addEventListener('keydown', e => { if(e.key === 'ArrowLeft') keys.left = 
 window.addEventListener('keyup', e => { if(e.key === 'ArrowLeft') keys.left = false; if(e.key === 'ArrowRight') keys.right = false; });
 
 const scriptText = [
-  { text: "You've just touched down in 21st-century London.", duration: 1500 },
-  { text: "We've altered your memories so it appears you arrived on their primitive technology known as a 'train'.", duration: 3300 },
-  { text: "We've sent you a rest stop location for your long travel.", duration: 2000 },
-  { text: "But, it got lost in transit. ", duration: 1500 },
-  { text: "Find it and report back. ", duration: 1500 },
+  { text: "I Hope you had a good rest break ", duration: 1500 },
+  { text: "Now", duration: 1000 },
+  { text: "I'm told our man on the ground might have more information.", duration: 1000 },
+  { text: "Find him.", duration: 1000 },
+  { text: "QUICKLY!", duration: 1000 },
 ];
 let currentIndex = 0;
 let introPlaying = true;
